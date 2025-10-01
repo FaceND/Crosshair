@@ -215,7 +215,7 @@ int OnCalculate(const int           rates_total,
      {
       GetCandleInfo(0, current_info);
       UpdateCandleInfo(current_info);
-      UpdateAskBidSpread(false);
+      UpdateAskBidSpread(!ShowInfo);
      }
    else if(bar_index == -1 || !ShowInfo)
      {
