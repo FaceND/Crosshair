@@ -10,6 +10,7 @@ for a seamless analysis experience.
 - [Features](#features)
 - [Installation](#installation)
 - [Inputs](#inputs)
+- [Customization](#customization)
 - [Usage](#usage)
 - [Script Code](#script-code)
 - [Contributing](#contributing)
@@ -49,44 +50,54 @@ for a seamless analysis experience.
 
 ### 🔹 Multi-Chart
 
-| Input          | Description                                                                                                 |
-| -------------- | ----------------------------------------------------------------------------------------------------------- |
-| Chart Sync     | Enables synchronization of the crosshair across multiple charts using time-based events.                    |
-| Throttle (ms)  | Controls update frequency (in milliseconds) to optimize performance and prevent excessive event triggering. |
+| Input            | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------------------------------------------------------------- |
+| `Chart Sync`     | Enables synchronization of the crosshair across multiple charts using time-based events.                    |
+| `Throttle (ms)`  | Controls update frequency (in milliseconds) to optimize performance and prevent excessive event triggering. |
 
 
 
 ### 🔹 Options
 
-| Input                               | Description                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------- |
-| Show Crosshair between the cursor   | Displays the crosshair lines following the cursor position.               |
-| Show candle information on hover    | Shows candle information (OHLC and volume) when hovering over a bar.      |
-| Show "ask,bid,spread" on the chart  | Displays Ask, Bid, and Spread information when candle info is not active. |
+| Input                                 | Description                                                               |
+| ------------------------------------- | ------------------------------------------------------------------------- |
+| `Show Crosshair between the cursor`   | Displays the crosshair lines following the cursor position.               |
+| `Show candle information on hover`    | Shows candle information (OHLC and volume) when hovering over a bar.      |
+| `Show "ask,bid,spread" on the chart`  | Displays Ask, Bid, and Spread information when candle info is not active. |
 
 ### 🔹 Settings
 
-| Input       | Description                                                            |
-| ----------- | ---------------------------------------------------------------------- |
-| Volume type | Selects the volume type used for display (tick volume or real volume). |
+| Input         | Description                                                            |
+| ------------- | ---------------------------------------------------------------------- |
+| `Volume type` | Selects the volume type used for display (tick volume or real volume). |
 
 ### 🔹 Crosshair
 
-| Input   | Description                                    |
-| ------- | ---------------------------------------------- |
-| Color   | Defines the color of the crosshair lines.      |
-| Style   | Sets the line style (solid, dashed, dotted).   |
-| Width   | Controls the thickness of the crosshair lines. |
+| Input     | Description                                    |
+| --------- | ---------------------------------------------- |
+| `Color`   | Defines the color of the crosshair lines.      |
+| `Style`   | Sets the line style (solid, dashed, dotted).   |
+| `Width`   | Controls the thickness of the crosshair lines. |
 
 ### 🔹 Information
 
-| Input                      | Description                                       |
-| -------------------------- | ------------------------------------------------- |
-| X Distance                 | Horizontal offset (pixels) from the chart corner. |
-| Y Distance                 | Vertical offset (pixels) from the chart corner.   |
-| Space between Text & Volue | Space between text labels and volume display.     |
-| Text color                 | Text color used in the information panel.         |
-| Font size                  | Font size of the displayed information.           |
+| Input                        | Description                                       |
+| ---------------------------- | ------------------------------------------------- |
+| `X Distance`                 | Horizontal offset (pixels) from the chart corner. |
+| `Y Distance`                 | Vertical offset (pixels) from the chart corner.   |
+| `Space between Text & Volue` | Space between text labels and volume display.     |
+| `Text color`                 | Text color used in the information panel.         |
+| `Font size`                  | Font size of the displayed information.           |
+
+---
+
+## 🎨 Customization
+
+You can customize the name of the object event by modifying the following number in the script.
+```mql5
+#define EVT_MOUSE_MOVE  2001
+#define EVT_MOUSE_LEAVE 2002
+```
 
 ---
 
@@ -118,7 +129,7 @@ Below is the MQL5 code used to create the "Crosshair" indicator
 //+------------------------------------------------------------------+
 #property copyright   "Copyright 2025, FaceND."
 #property link        "https://github.com/FaceND/Crosshair"
-#property version     "1.3"
+#property version     "1.4"
 #property description "Interactive crosshair-based indicator that displays detailed candle information "
 #property description "including OHLC (Open, High, Low, Close) and volume data directly on the chart, "
 #property description "updating dynamically as the cursor moves to provide precise and efficient market analysis."
@@ -173,7 +184,8 @@ struct InformationList
 CrosshairState Crosshair;
 InformationList Current_bar;
 
-#define EVT_MOUSE_MOVE   2001
+#define EVT_MOUSE_MOVE  2001
+#define EVT_MOUSE_LEAVE 2002
 
 #define VLINE_NAME         "Crosshair_Vertical"
 #define HLINE_NAME         "Crosshair_Horizontal"
@@ -201,9 +213,8 @@ InformationList Current_bar;
 int previous_x = -1;
 int previous_y = -1;
 
-int previous_bar = -1;
-
 datetime mouse_time;
+int previous_bar = -1;
 
 int chart_height;
 int chart_width;
@@ -297,19 +308,29 @@ void OnChartEvent(const int                 id,
      {
       if(!ChartSync)
         {
-         HideCrosshair();
-         Crosshair.bar = -1;
          if(previous_bar != -1)
            {
             UpdateText(false);
            }
+         HideCrosshair();
+         Crosshair.bar = -1;
          previous_bar = Crosshair.bar;
         }
       else
         {
-         HandleMouseMove(x, y, (datetime)sparam);
+         HandleReceiveMove(x, y, (datetime)sparam);
         }
      return;
+     }
+   else if(id == CHARTEVENT_CUSTOM + EVT_MOUSE_LEAVE)
+     {
+      HideCrosshair();
+
+      Crosshair.bar = -1;
+      Crosshair.visible = false;
+
+      UpdateText(false);
+      return;
      }
    else if(id == CHARTEVENT_MOUSE_MOVE)
      {
@@ -317,7 +338,6 @@ void OnChartEvent(const int                 id,
       previous_y = y;
 
       HandleMouseMove(x, y);
-      BroadcastEvent(x, y, (string)mouse_time);
       return;
      }
    else if(id == CHARTEVENT_CHART_CHANGE)
@@ -427,12 +447,16 @@ void HandleMouseMove(const int x_coordinate, const int y_coordinate)
         }
       //+--------------------------- Line ---------------------------+
       UpdateCrosshair(Crosshair.time, Crosshair.price);
+      BroadcastEvent((ushort)EVT_MOUSE_MOVE, x_coordinate,
+                        y_coordinate, (string)mouse_time);
       Crosshair.visible = true;
      }
    else
      {
       Crosshair.bar = -1;
       HideCrosshair();
+      BroadcastEvent((ushort)EVT_MOUSE_LEAVE, x_coordinate,
+                        y_coordinate, (string)mouse_time);
       Crosshair.visible = false;
      }
    //+------------------------------ Text ---------------------------+
@@ -451,9 +475,9 @@ void HandleMouseMove(const int x_coordinate, const int y_coordinate)
    //+---------------------------------------------------------------+
   }
 //+------------------------------------------------------------------+
-//| Function to handle when mouse move event with time               |
+//| Function to handle when receive mouse move event                 |
 //+------------------------------------------------------------------+
-void HandleMouseMove(const int x_coordinate, const int y_coordinate, const datetime time)
+void HandleReceiveMove(const int x_coordinate, const int y_coordinate, const datetime time)
   {
    ResetLastError();
 
@@ -672,7 +696,7 @@ void UpdateABSObject(const bool not_blank = true)
 //+------------------------------------------------------------------+
 //| Custom indicator iteration function                              |
 //+------------------------------------------------------------------+
-void BroadcastEvent(const long lparam, const double dparam, const string sparam)
+void BroadcastEvent(ushort event, const long lparam, const double dparam, const string sparam)
   {
    if(GetTickCount() - event_last_send < (uint)ThrottleMs) return;
    event_last_send = GetTickCount();
@@ -684,7 +708,7 @@ void BroadcastEvent(const long lparam, const double dparam, const string sparam)
      {
       if(id != self)
         {
-         EventChartCustom(id, EVT_MOUSE_MOVE, lparam, dparam, sparam);
+         EventChartCustom(id, event, lparam, dparam, sparam);
         }
       id = ChartNext(id);
      }
@@ -768,7 +792,7 @@ Contributions are welcome! If you have any improvements, bug fixes, or new featu
    ```
    git commit -m "Add your feature"
    ```
-5. Push to your branch:
+5. Push to your branch
 
    ```
    git push origin feature/your-feature-name
