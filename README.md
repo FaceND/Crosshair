@@ -100,7 +100,7 @@ You can customize the name of the object event by modifying the following number
 
 ---
 
-## 📖  Usage
+## 📖 Usage
 
 1. Attach the indicator to multiple charts
 2. Move your mouse on any chart
