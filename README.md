@@ -7,15 +7,15 @@ for a seamless analysis experience.
 ---
 
 ## 📑 Table of Contents
-- [Features](#features)
-- [Installation](#installation)
-- [Inputs](#inputs)
-- [Customization](#customization)
-- [Usage](#usage)
-- [Script Code](#script-code)
-- [Contributing](#contributing)
-- [Note](#Notes)
-- [License](#license)
+- [Features](#-features)
+- [Installation](#-installation)
+- [Inputs](#-inputs)
+- [Customization](#-customization)
+- [Usage](#-usage)
+- [Script Code](#-script-code)
+- [Contributing](#-contributing)
+- [Notes](#-notes)
+- [License](#-license)
 
 ---
 
